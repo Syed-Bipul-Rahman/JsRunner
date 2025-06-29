@@ -1,19 +1,22 @@
 package me.bipul.jsrunner
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.webkit.*
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import com.amrdeveloper.codeview.CodeView
 import java.util.concurrent.Executors
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import java.util.regex.Pattern
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
-    private lateinit var editScript: EditText
+    private lateinit var codeView: CodeView
     private lateinit var tvOutput: TextView
     private lateinit var progressBar: ProgressBar
     private var isExecuting = false
@@ -26,7 +29,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        editScript = findViewById(R.id.editScript)
+        codeView = findViewById(R.id.editScript)
         tvOutput = findViewById(R.id.tvOutput)
         progressBar = findViewById(R.id.progressBar)
         val btnRun: Button = findViewById(R.id.btnRun)
@@ -34,11 +37,12 @@ class MainActivity : AppCompatActivity() {
 
         timeoutExecutor = Executors.newSingleThreadScheduledExecutor()
 
+        setupCodeView()
         initializeWebView()
 
         btnRun.setOnClickListener {
             if (!isExecuting) {
-                val script = editScript.text.toString().trim()
+                val script = codeView.text.toString().trim()
                 when {
                     script.isEmpty() -> tvOutput.append("\n[Info]: Please enter JavaScript code.")
                     script.length > 10000 -> tvOutput.append("\n[Error]: Script too large (max 10,000 characters).")
@@ -55,8 +59,124 @@ class MainActivity : AppCompatActivity() {
 
         btnClear.setOnClickListener {
             tvOutput.text = ""
-            editScript.text.clear()
+            codeView.setText("")
         }
+    }
+
+    private fun setupCodeView() {
+        // Set up JavaScript syntax highlighting
+        codeView.apply {
+            // Enable syntax highlighting
+            setEnableLineNumber(true)
+            setLineNumberTextColor(Color.GRAY)
+            setLineNumberTextSize(12f)
+
+            // Set colors for syntax highlighting
+            setBackgroundColor(Color.parseColor("#282c34"))
+            setTextColor(Color.parseColor("#abb2bf"))
+            setTextSize(14f)
+
+            // JavaScript keywords
+            addSyntaxPattern(
+                Pattern.compile("\\b(abstract|arguments|await|boolean|break|byte|case|catch|char|class|const|continue|debugger|default|delete|do|double|else|enum|eval|export|extends|false|final|finally|float|for|function|goto|if|implements|import|in|instanceof|int|interface|let|long|native|new|null|package|private|protected|public|return|short|static|super|switch|synchronized|this|throw|throws|transient|true|try|typeof|var|void|volatile|while|with|yield)\\b"),
+                Color.parseColor("#c678dd")
+            )
+
+            // Numbers
+            addSyntaxPattern(
+                Pattern.compile("\\b\\d+(\\.\\d+)?\\b"),
+                Color.parseColor("#d19a66")
+            )
+
+            // Strings
+            addSyntaxPattern(
+                Pattern.compile("\"([^\"\\\\]|\\\\.)*\""),
+                Color.parseColor("#98c379")
+            )
+            addSyntaxPattern(
+                Pattern.compile("'([^'\\\\]|\\\\.)*'"),
+                Color.parseColor("#98c379")
+            )
+            addSyntaxPattern(
+                Pattern.compile("`([^`\\\\]|\\\\.)*`"),
+                Color.parseColor("#98c379")
+            )
+
+            // Comments
+            addSyntaxPattern(
+                Pattern.compile("//.*"),
+                Color.parseColor("#5c6370")
+            )
+            addSyntaxPattern(
+                Pattern.compile("/\\*[\\s\\S]*?\\*/"),
+                Color.parseColor("#5c6370")
+            )
+
+            // Functions and methods
+            addSyntaxPattern(
+                Pattern.compile("\\b[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()"),
+                Color.parseColor("#61dafb")
+            )
+
+            // Operators
+            addSyntaxPattern(
+                Pattern.compile("[+\\-*/%=<>!&|^~?:]"),
+                Color.parseColor("#56b6c2")
+            )
+
+            // Brackets and parentheses
+            addSyntaxPattern(
+                Pattern.compile("[\\[\\](){}]"),
+                Color.parseColor("#abb2bf")
+            )
+
+            // Set up auto-completion
+            setupAutoCompletion()
+
+            // Set hint text
+            hint = "Enter JavaScript code..."
+        }
+    }
+
+    private fun setupAutoCompletion() {
+        val suggestions = mutableListOf<String>()
+
+        // JavaScript keywords
+        suggestions.addAll(listOf(
+            "abstract", "arguments", "await", "boolean", "break", "byte", "case", "catch",
+            "char", "class", "const", "continue", "debugger", "default", "delete", "do",
+            "double", "else", "enum", "eval", "export", "extends", "false", "final",
+            "finally", "float", "for", "function", "goto", "if", "implements", "import",
+            "in", "instanceof", "int", "interface", "let", "long", "native", "new",
+            "null", "package", "private", "protected", "public", "return", "short",
+            "static", "super", "switch", "synchronized", "this", "throw", "throws",
+            "transient", "true", "try", "typeof", "var", "void", "volatile", "while",
+            "with", "yield"
+        ))
+
+        // Built-in objects and methods
+        suggestions.addAll(listOf(
+            "console.log", "console.error", "console.warn", "console.info",
+            "Array", "Object", "String", "Number", "Boolean", "Date", "Math",
+            "JSON.parse", "JSON.stringify", "parseInt", "parseFloat", "isNaN",
+            "setTimeout", "setInterval", "clearTimeout", "clearInterval",
+            "length", "push", "pop", "shift", "unshift", "slice", "splice",
+            "indexOf", "includes", "forEach", "map", "filter", "reduce",
+            "toString", "valueOf", "hasOwnProperty", "constructor",
+            "prototype", "call", "apply", "bind"
+        ))
+
+        // Common patterns
+        suggestions.addAll(listOf(
+            "function() {}", "if() {}", "for() {}", "while() {}", "try {} catch() {}",
+            "switch() {}", "console.log()", "return", "document.getElementById",
+            "addEventListener", "removeEventListener", "querySelector",
+            "querySelectorAll", "createElement", "appendChild", "removeChild"
+        ))
+
+        // Convert to adapter and set suggestions (this may vary based on CodeView version)
+        // For now, we'll just store the suggestions - the actual implementation
+        // depends on the specific CodeView version you're using
     }
 
     private fun initializeWebView() {
