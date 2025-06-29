@@ -9,7 +9,7 @@
 - **Mobile-Friendly Editor**: Lightweight and responsive code editor designed for mobile screens.
 - **Instant Output**: See results of your code in real time.
 - **Beginner-Friendly**: Ideal for learners who want to start coding without setting up a desktop development environment.
-- **Offline Support (Coming Soon)**: Write and run code even without an internet connection.
+- **Offline Support**: Write and run code even without an internet connection.
 
 ### 🔮 Future Enhancements
 We're continuously improving JsRunner to support more advanced development workflows:
